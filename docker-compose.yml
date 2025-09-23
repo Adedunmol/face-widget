@@ -1,0 +1,11 @@
+services:
+  app:
+    build:
+      context: .
+    container_name: face-widget
+    ports:
+      - ${PORT}:5000
+    env_file: ".env"
+    deploy:
+      restart_policy:
+        condition: on-failure
