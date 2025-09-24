@@ -5,6 +5,7 @@ import (
 	"github.com/Kagami/go-face"
 	"log"
 	"path/filepath"
+	"time"
 )
 
 const ModelDir = "models"
@@ -12,6 +13,7 @@ const ModelDir = "models"
 func CompareImages() error {
 	log.Println("comparing images")
 
+	currentTime := time.Now()
 	modelsPath := filepath.Join(".", ModelDir)
 	rec, err := face.NewRecognizer(modelsPath)
 
@@ -59,6 +61,8 @@ func CompareImages() error {
 	} else {
 		fmt.Println("ClassifyThreshold result: Person index", match)
 	}
+
+	log.Println("time to classify: ", time.Since(currentTime))
 
 	sameDist := face.SquaredEuclideanDistance(face1.Descriptor, face1.Descriptor)
 	sameDist1 := face.SquaredEuclideanDistance(face2.Descriptor, face2.Descriptor)
