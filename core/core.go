@@ -28,11 +28,11 @@ func CompareImages() error {
 	if err != nil {
 		return fmt.Errorf("error recognizing file: %v", err)
 	}
-
-	face2, err := rec.RecognizeSingleFile("./images/unknown1.jpg")
-	if err != nil {
-		return fmt.Errorf("error recognizing file: %v", err)
-	}
+	//
+	//face2, err := rec.RecognizeSingleFile("./images/unknown1.jpg")
+	//if err != nil {
+	//	return fmt.Errorf("error recognizing file: %v", err)
+	//}
 
 	// Load sample images (replace with actual file paths)
 	unknownImg := "./images/jesse.jpg"
@@ -40,8 +40,8 @@ func CompareImages() error {
 	// Add them to recognizer
 	rec.SetSamples([]face.Descriptor{
 		face1.Descriptor,
-		face2.Descriptor,
-	}, []int32{0, 1})
+		//face2.Descriptor,
+	}, []int32{0})
 
 	// Now test with an unknown face
 	testFace, err := rec.RecognizeSingleFile(unknownImg)
@@ -50,28 +50,28 @@ func CompareImages() error {
 	}
 
 	// 1) Classify: always returns closest match
-	closest := rec.Classify(testFace.Descriptor)
-	fmt.Println("Classify result:", closest)
+	//closest := rec.Classify(testFace.Descriptor)
+	//fmt.Println("Classify result:", closest)
 
 	// 2) ClassifyThreshold: returns -1 if not close enough
-	threshold := 0.2
+	threshold := 0.25
 	match := rec.ClassifyThreshold(testFace.Descriptor, float32(threshold))
 	if match < 0 {
 		fmt.Println("ClassifyThreshold result: Unknown face")
 	} else {
 		fmt.Println("ClassifyThreshold result: Person index", match)
 	}
-
+	//
 	log.Println("time to classify: ", time.Since(currentTime))
-
-	sameDist := face.SquaredEuclideanDistance(face1.Descriptor, face1.Descriptor)
-	sameDist1 := face.SquaredEuclideanDistance(face2.Descriptor, face2.Descriptor)
-
-	dist := face.SquaredEuclideanDistance(face1.Descriptor, testFace.Descriptor)
-
-	fmt.Println("different distance: ", dist)
-	fmt.Println("same distance: ", sameDist)
-	fmt.Println("same distance1 : ", sameDist1)
+	//
+	//sameDist := face.SquaredEuclideanDistance(face1.Descriptor, face1.Descriptor)
+	//sameDist1 := face.SquaredEuclideanDistance(face2.Descriptor, face2.Descriptor)
+	//
+	//dist := face.SquaredEuclideanDistance(face1.Descriptor, testFace.Descriptor)
+	//
+	//fmt.Println("different distance: ", dist)
+	//fmt.Println("same distance: ", sameDist)
+	//fmt.Println("same distance1 : ", sameDist1)
 
 	return nil
 }
