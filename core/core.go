@@ -1,17 +1,36 @@
 package core
 
 import (
+	"errors"
 	"fmt"
 	"github.com/Kagami/go-face"
 	"log"
+	"os"
 	"path/filepath"
 	"time"
 )
 
-const ModelDir = "models"
+const (
+	ModelDir = "models"
+	ImageDir = "images"
+)
 
-func CompareImages() error {
+var ErrFileNotExist = errors.New("file does not exist")
+var ErrNoMatch = errors.New("faces do not match")
+
+func CompareImages(knownImage, candidateImage string) error {
 	log.Println("comparing images")
+
+	knownImagePath := filepath.Join(ImageDir, knownImage)
+	candidateImagePath := filepath.Join(ImageDir, candidateImage)
+
+	if _, err := os.Stat(knownImagePath); os.IsNotExist(err) {
+		return ErrFileNotExist
+	}
+
+	if _, err := os.Stat(candidateImagePath); os.IsNotExist(err) {
+		return ErrFileNotExist
+	}
 
 	currentTime := time.Now()
 	modelsPath := filepath.Join(".", ModelDir)
@@ -22,56 +41,30 @@ func CompareImages() error {
 	}
 	defer rec.Close()
 
-	// the saved image
-	// change image path
-	face1, err := rec.RecognizeSingleFile("./images/known.jpg")
+	face1, err := rec.RecognizeSingleFile(knownImage) // "./images/known.jpg"
 	if err != nil {
 		return fmt.Errorf("error recognizing file: %v", err)
 	}
-	//
-	//face2, err := rec.RecognizeSingleFile("./images/unknown1.jpg")
-	//if err != nil {
-	//	return fmt.Errorf("error recognizing file: %v", err)
-	//}
-
-	// Load sample images (replace with actual file paths)
-	unknownImg := "./images/jesse.jpg"
 
 	// Add them to recognizer
 	rec.SetSamples([]face.Descriptor{
 		face1.Descriptor,
-		//face2.Descriptor,
 	}, []int32{0})
 
-	// Now test with an unknown face
-	testFace, err := rec.RecognizeSingleFile(unknownImg)
+	// test with an unknown face
+	testFace, err := rec.RecognizeSingleFile(candidateImage)
 	if err != nil {
-		log.Fatalf("No face found in %s", unknownImg)
+		return fmt.Errorf("error recognizing file: %v", err)
 	}
 
-	// 1) Classify: always returns closest match
-	//closest := rec.Classify(testFace.Descriptor)
-	//fmt.Println("Classify result:", closest)
-
-	// 2) ClassifyThreshold: returns -1 if not close enough
+	// ClassifyThreshold: returns -1 if not close enough
 	threshold := 0.25
 	match := rec.ClassifyThreshold(testFace.Descriptor, float32(threshold))
 	if match < 0 {
 		fmt.Println("ClassifyThreshold result: Unknown face")
-	} else {
-		fmt.Println("ClassifyThreshold result: Person index", match)
+		return ErrNoMatch
 	}
-	//
 	log.Println("time to classify: ", time.Since(currentTime))
-	//
-	//sameDist := face.SquaredEuclideanDistance(face1.Descriptor, face1.Descriptor)
-	//sameDist1 := face.SquaredEuclideanDistance(face2.Descriptor, face2.Descriptor)
-	//
-	//dist := face.SquaredEuclideanDistance(face1.Descriptor, testFace.Descriptor)
-	//
-	//fmt.Println("different distance: ", dist)
-	//fmt.Println("same distance: ", sameDist)
-	//fmt.Println("same distance1 : ", sameDist1)
-
+	fmt.Println("ClassifyThreshold result: Person index", match)
 	return nil
 }
