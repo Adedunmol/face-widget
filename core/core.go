@@ -4,6 +4,8 @@ import (
 	"errors"
 	"fmt"
 	"github.com/Kagami/go-face"
+	"image"
+	_ "image/jpeg"
 	"log"
 	"os"
 	"path/filepath"
@@ -15,14 +17,18 @@ const (
 	ImageDir = "images"
 )
 
-var ErrFileNotExist = errors.New("file does not exist")
-var ErrNoMatch = errors.New("faces do not match")
+var (
+	ErrFileNotExist  = errors.New("file does not exist")
+	ErrNoMatch       = errors.New("faces do not match")
+	ErrInvalidFormat = errors.New("invalid image format")
+	ErrDecodingImage = errors.New("error decoding image")
+)
 
 func CompareImages(knownImage, candidateImage string) error {
 	log.Println("comparing images")
 
-	knownImagePath := filepath.Join(ImageDir, knownImage)
-	candidateImagePath := filepath.Join(ImageDir, candidateImage)
+	knownImagePath := filepath.Join(".", ImageDir, knownImage)
+	candidateImagePath := filepath.Join(".", ImageDir, candidateImage)
 
 	if _, err := os.Stat(knownImagePath); os.IsNotExist(err) {
 		return ErrFileNotExist
@@ -30,6 +36,14 @@ func CompareImages(knownImage, candidateImage string) error {
 
 	if _, err := os.Stat(candidateImagePath); os.IsNotExist(err) {
 		return ErrFileNotExist
+	}
+
+	if err := ValidateImage(knownImagePath); err != nil {
+		return err
+	}
+
+	if err := ValidateImage(candidateImagePath); err != nil {
+		return err
 	}
 
 	currentTime := time.Now()
@@ -41,7 +55,7 @@ func CompareImages(knownImage, candidateImage string) error {
 	}
 	defer rec.Close()
 
-	face1, err := rec.RecognizeSingleFile(knownImage) // "./images/known.jpg"
+	face1, err := rec.RecognizeSingleFile(knownImagePath)
 	if err != nil {
 		return fmt.Errorf("error recognizing file: %v", err)
 	}
@@ -52,7 +66,7 @@ func CompareImages(knownImage, candidateImage string) error {
 	}, []int32{0})
 
 	// test with an unknown face
-	testFace, err := rec.RecognizeSingleFile(candidateImage)
+	testFace, err := rec.RecognizeSingleFile(candidateImagePath)
 	if err != nil {
 		return fmt.Errorf("error recognizing file: %v", err)
 	}
@@ -60,11 +74,34 @@ func CompareImages(knownImage, candidateImage string) error {
 	// ClassifyThreshold: returns -1 if not close enough
 	threshold := 0.25
 	match := rec.ClassifyThreshold(testFace.Descriptor, float32(threshold))
+
+	log.Println("time to classify: ", time.Since(currentTime))
+
 	if match < 0 {
 		fmt.Println("ClassifyThreshold result: Unknown face")
 		return ErrNoMatch
 	}
-	log.Println("time to classify: ", time.Since(currentTime))
 	fmt.Println("ClassifyThreshold result: Person index", match)
 	return nil
+}
+
+func ValidateImage(imagePath string) error {
+
+	file, err := os.Open(imagePath)
+	if err != nil {
+		return fmt.Errorf("error opening file: %v", err)
+	}
+	defer file.Close()
+
+	_, format, err := image.DecodeConfig(file)
+	if err != nil {
+		log.Println(err)
+		return ErrDecodingImage
+	}
+
+	if format == "jpeg" {
+		return nil
+	}
+
+	return ErrInvalidFormat
 }
