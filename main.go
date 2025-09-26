@@ -1,7 +1,11 @@
 package main
 
-import "fmt"
+import "github.com/Adedunmol/face-widget/core"
 
 func main() {
-	fmt.Println("face-widget")
+
+	err := core.CompareImages("known.jpg", "jesse.jpg")
+	if err != nil {
+		panic(err)
+	}
 }
