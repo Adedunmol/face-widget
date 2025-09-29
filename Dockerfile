@@ -49,7 +49,7 @@ RUN apt-get update && apt-get install -y \
 # Copy only built binary + models
 COPY --from=builder /app/main .
 COPY --from=builder /app/models ./models
-COPY --from=builder /app/images ./images
+#COPY --from=builder /app/images ./images
 
 # Run the binary
 CMD ["./main"]
