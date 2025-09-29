@@ -48,6 +48,7 @@ RUN apt-get update && apt-get install -y \
 
 # Copy only built binary + models
 COPY --from=builder /app/main .
+COPY --from=builder /app/api/db/migrations ./api/db/migrations
 COPY --from=builder /app/models ./models
 #COPY --from=builder /app/images ./images
 
