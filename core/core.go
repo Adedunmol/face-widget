@@ -71,17 +71,23 @@ func CompareImages(knownImage, candidateImage string) error {
 		return fmt.Errorf("error recognizing file: %v", err)
 	}
 
+	if testFace == nil {
+		return fmt.Errorf("test face is nil")
+	}
+
 	// ClassifyThreshold: returns -1 if not close enough
 	threshold := 0.25
 	match := rec.ClassifyThreshold(testFace.Descriptor, float32(threshold))
 
-	log.Println("time to classify: ", time.Since(currentTime))
+	log.Println("time to classify: ", time.Since(currentTime).Seconds())
+	fmt.Println("euclidean distance: ", face.SquaredEuclideanDistance(face1.Descriptor, testFace.Descriptor))
 
 	if match < 0 {
 		fmt.Println("ClassifyThreshold result: Unknown face")
 		return ErrNoMatch
 	}
 	fmt.Println("ClassifyThreshold result: Person index", match)
+	fmt.Println("euclidean distance: ", face.SquaredEuclideanDistance(face1.Descriptor, testFace.Descriptor))
 	return nil
 }
 
