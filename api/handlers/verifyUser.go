@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"database/sql"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
@@ -11,11 +12,10 @@ import (
 
 	"github.com/Adedunmol/face-widget/api/db"
 	"github.com/Adedunmol/face-widget/api/models"
-
-	"github.com/lib/pq"
+	"github.com/Adedunmol/face-widget/core"
 )
 
-func RegisterUser(w http.ResponseWriter, r *http.Request) {
+func VerifyUser(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		respondWithError(w, "Unaccepted method", http.StatusMethodNotAllowed)
 		return
@@ -27,25 +27,40 @@ func RegisterUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var thisRequest models.RegisterPayload
+	var thisRequest models.VerifyUserPayload
 	err = json.Unmarshal(body, &thisRequest)
 	if err != nil {
 		respondWithError(w, "Invalid request payload", http.StatusBadRequest)
 		return
 	}
 
-	if thisRequest.Email == "" ||
-		thisRequest.FirstName == "" ||
-		thisRequest.LastName == "" ||
-		thisRequest.EncodedImage == "" {
+	if thisRequest.Email == "" || thisRequest.EncodedImage == "" {
 		respondWithError(w, "All fields are required", http.StatusBadRequest)
+		return
+	}
+
+	query := `
+		SELECT
+			first_name,
+			last_name,
+			facial_image
+		FROM users
+		WHERE email = $1`
+	var firstName, lastName, baseImage string
+	err = db.DB.QueryRow(query, thisRequest.Email).Scan(&firstName, &lastName, &baseImage)
+	if err == sql.ErrNoRows {
+		respondWithError(w, "User account doesn't exist", http.StatusUnauthorized)
+		return
+	}
+	if err != nil {
+		respondWithError(w, "Database error: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
 
 	// 1. Decode the Base64 string into bytes.
 	decodedData, err := base64.StdEncoding.DecodeString(thisRequest.EncodedImage)
 	if err != nil {
-		respondWithError(w, "Invalid Base64 string: "+err.Error(), http.StatusBadRequest)
+		respondWithError(w, "Invalid Base64 string", http.StatusBadRequest)
 		return
 	}
 
@@ -60,9 +75,9 @@ func RegisterUser(w http.ResponseWriter, r *http.Request) {
 	uniqueFilename := fmt.Sprintf(
 		"%d_%s%s%s%s",
 		time.Now().Unix(),
-		thisRequest.FirstName,
-		thisRequest.LastName,
-		"BaseImage",
+		firstName,
+		lastName,
+		"VerificationImage",
 		".jpg",
 	)
 	filepath := fmt.Sprintf("./images/%s", uniqueFilename)
@@ -73,32 +88,14 @@ func RegisterUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	query := `
-		INSERT INTO users (
-			email,
-			first_name,
-			last_name,
-			facial_image
-		) VALUES ($1, $2, $3, $4
-		) RETURNING id`
-	var userID int
-	err = db.DB.QueryRow(
-		query,
-		thisRequest.Email,
-		thisRequest.FirstName,
-		thisRequest.LastName,
-		uniqueFilename,
-	).Scan(&userID)
-	if err != nil {
-		if dbError, ok := err.(*pq.Error); ok && dbError.Code.Name() == "unique_violation" {
-			os.Remove(filepath)
-			respondWithError(w, "Email already exists", http.StatusConflict)
-			return
-		}
+	if err := core.CompareImages(baseImage, uniqueFilename); err == core.ErrNoMatch {
+		respondWithError(w, "Invalid credentials", http.StatusUnauthorized)
+		return
+	} else if err != nil {
 		os.Remove(filepath)
-		respondWithError(w, "Failed to register user: "+err.Error(), http.StatusInternalServerError)
+		respondWithError(w, "Failed to verify user: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	respondWithJSON(w, http.StatusCreated, map[string]string{"message": "Registration successful!"})
+	respondWithJSON(w, http.StatusOK, map[string]string{"message": "User verified successfully!"})
 }

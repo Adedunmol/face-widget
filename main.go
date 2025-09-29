@@ -24,6 +24,7 @@ func main() {
 	mux := http.NewServeMux()
 
 	mux.HandleFunc("POST /register", handlers.RegisterUser)
+	mux.HandleFunc("POST /verify", handlers.VerifyUser)
 
 	c := cors.New(cors.Options{
 		AllowedOrigins:   []string{"*"},
