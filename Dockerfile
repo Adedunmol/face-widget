@@ -27,6 +27,8 @@ RUN --mount=type=cache,target=/go/pkg \
 # Copy project files
 COPY . .
 
+RUN mkdir -p /app/images
+
 # Build app with caching enabled
 RUN --mount=type=cache,target=/root/.cache/go-build \
     --mount=type=cache,target=/go/pkg \
@@ -45,6 +47,8 @@ RUN apt-get update && apt-get install -y \
     liblapack3 \
     libjpeg62-turbo \
  && rm -rf /var/lib/apt/lists/*
+
+RUN mkdir -p ./images
 
 # Copy only built binary + models
 COPY --from=builder /app/main .
