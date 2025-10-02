@@ -13,8 +13,9 @@ import (
 )
 
 const (
-	ModelDir = "models"
-	ImageDir = "images"
+	ModelDir  = "models"
+	ImageDir  = "images"
+	Threshold = 0.15
 )
 
 var (
@@ -81,9 +82,7 @@ func CompareImages(knownImage, candidateImage string) error {
 		return fmt.Errorf("test face is nil")
 	}
 
-	// ClassifyThreshold: returns -1 if not close enough
-	threshold := 0.25
-	match := rec.ClassifyThreshold(testFace.Descriptor, float32(threshold))
+	match := rec.ClassifyThreshold(testFace.Descriptor, float32(Threshold))
 
 	log.Println("time to classify: ", time.Since(currentTime).Seconds())
 	fmt.Println("euclidean distance: ", face.SquaredEuclideanDistance(face1.Descriptor, testFace.Descriptor))
