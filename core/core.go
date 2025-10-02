@@ -33,14 +33,14 @@ func CompareImages(knownImage, candidateImage string) error {
 	log.Println("known image path: ", knownImagePath)
 	log.Println("candidate image path: ", candidateImagePath)
 
-	if _, err := os.Stat(knownImagePath); os.IsNotExist(err) {
-		log.Println("known image path not exist")
-		return ErrFileNotExist
-	}
-
 	if _, err := os.Stat(candidateImagePath); os.IsNotExist(err) {
 		log.Println("candidate image path not exist")
 
+		return ErrFileNotExist
+	}
+
+	if _, err := os.Stat(knownImagePath); os.IsNotExist(err) {
+		log.Println("known image path not exist")
 		return ErrFileNotExist
 	}
 
