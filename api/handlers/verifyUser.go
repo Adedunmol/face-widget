@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"os"
 	"time"
@@ -46,14 +47,29 @@ func VerifyUser(w http.ResponseWriter, r *http.Request) {
 			facial_image
 		FROM users
 		WHERE email = $1`
-	var firstName, lastName, baseImage string
-	err = db.DB.QueryRow(query, thisRequest.Email).Scan(&firstName, &lastName, &baseImage)
+	var firstName, lastName, baseImageURL string
+	err = db.DB.QueryRow(query, thisRequest.Email).Scan(&firstName, &lastName, &baseImageURL)
 	if err == sql.ErrNoRows {
 		respondWithError(w, "User account doesn't exist", http.StatusUnauthorized)
 		return
 	}
 	if err != nil {
 		respondWithError(w, "Database error: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	// Get the data from the URL
+	resp, err := http.Get(baseImageURL)
+	if err != nil {
+		log.Fatalf("Failed to download file from URL: %w", err)
+		respondWithError(w, "Error downloading baseImage from Cloudinary", http.StatusInternalServerError)
+		return
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		log.Fatalf("Unexpected status code: %d", resp.StatusCode)
+		respondWithError(w, "Error downloading baseImage from Cloudinary", http.StatusInternalServerError)
 		return
 	}
 
@@ -71,8 +87,16 @@ func VerifyUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	baseImageFilename := fmt.Sprintf(
+		"%d_%s%s%s%s",
+		time.Now().Unix(),
+		firstName,
+		lastName,
+		"BaseImage",
+		".jpg",
+	)
 	// 3. Create a unique filename for the new file
-	uniqueFilename := fmt.Sprintf(
+	verificationImageFilename := fmt.Sprintf(
 		"%d_%s%s%s%s",
 		time.Now().Unix(),
 		firstName,
@@ -80,19 +104,38 @@ func VerifyUser(w http.ResponseWriter, r *http.Request) {
 		"VerificationImage",
 		".jpg",
 	)
-	filepath := fmt.Sprintf("./images/%s", uniqueFilename)
+
+	baseFilepath := fmt.Sprintf("./images/%s", baseImageFilename)
+	verificationFilepath := fmt.Sprintf("./images/%s", verificationImageFilename)
+
+	baseFile, err := os.Create(baseFilepath)
+	if err != nil {
+		log.Fatalf("Failed to create temp file: %w", err)
+		respondWithError(w, "Error creating file", http.StatusInternalServerError)
+		return
+	}
+	defer baseFile.Close()
 
 	// 4. Save the decoded data to a new file
-	if err := os.WriteFile(filepath, decodedData, 0644); err != nil {
-		respondWithError(w, "Failed to save file", http.StatusInternalServerError)
+	if _, err := io.Copy(baseFile, resp.Body); err != nil {
+		os.Remove(baseFilepath)
+		respondWithError(w, "Failed to save baseImage file"+err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	if err := core.CompareImages(baseImage, uniqueFilename); err == core.ErrNoMatch {
+	if err := os.WriteFile(verificationFilepath, decodedData, 0644); err != nil {
+		os.Remove(baseFilepath)
+		respondWithError(w, "Failed to save verificationImage file"+err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	if err := core.CompareImages(baseImageFilename, verificationImageFilename); err == core.ErrNoMatch {
+		os.Remove(baseFilepath)
 		respondWithError(w, "Invalid credentials", http.StatusUnauthorized)
 		return
 	} else if err != nil {
-		os.Remove(filepath)
+		os.Remove(baseFilepath)
+		os.Remove(verificationFilepath)
 		respondWithError(w, "Failed to verify user: "+err.Error(), http.StatusInternalServerError)
 		return
 	}

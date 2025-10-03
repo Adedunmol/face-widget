@@ -6,6 +6,11 @@ toolchain go1.24.7
 
 require (
 	github.com/Kagami/go-face v0.0.0-20210630145111-0c14797b4d0e // indirect
+	github.com/cloudinary/cloudinary-go v1.7.0 // indirect
+	github.com/cloudinary/cloudinary-go/v2 v2.13.0 // indirect
+	github.com/creasty/defaults v1.7.0 // indirect
+	github.com/google/uuid v1.6.0 // indirect
+	github.com/gorilla/schema v1.4.1 // indirect
 	github.com/joho/godotenv v1.5.1 // indirect
 	github.com/lib/pq v1.10.9 // indirect
 	github.com/mfridman/interpolate v0.0.2 // indirect

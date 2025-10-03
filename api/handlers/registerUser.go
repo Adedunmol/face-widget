@@ -1,17 +1,18 @@
 package handlers
 
 import (
+	"context"
 	"encoding/base64"
 	"encoding/json"
-	"fmt"
 	"io"
+	"log"
 	"net/http"
-	"os"
-	"time"
 
 	"github.com/Adedunmol/face-widget/api/db"
 	"github.com/Adedunmol/face-widget/api/models"
 
+	"github.com/cloudinary/cloudinary-go/v2"
+	"github.com/cloudinary/cloudinary-go/v2/api/uploader"
 	"github.com/lib/pq"
 )
 
@@ -56,20 +57,19 @@ func RegisterUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// 3. Create a unique filename for the new file
-	uniqueFilename := fmt.Sprintf(
-		"%d_%s%s%s%s",
-		time.Now().Unix(),
-		thisRequest.FirstName,
-		thisRequest.LastName,
-		"BaseImage",
-		".jpg",
-	)
-	filepath := fmt.Sprintf("./images/%s", uniqueFilename)
+	ctx := context.Background()
 
-	// 4. Save the decoded data to a new file
-	if err := os.WriteFile(filepath, decodedData, 0644); err != nil {
-		respondWithError(w, "Failed to save file", http.StatusInternalServerError)
+	cld, err := cloudinary.New()
+	if err != nil {
+		log.Fatalf("Failed to create Cloudinary instance: %v", err)
+		respondWithError(w, "Error creating Cloudinary instance", http.StatusInternalServerError)
+		return
+	}
+
+	uploadResult, err := cld.Upload.Upload(ctx, "data:image/jpeg;base64,"+thisRequest.EncodedImage, uploader.UploadParams{})
+	if err != nil {
+		log.Fatalf("Failed to upload file: %v", err)
+		respondWithError(w, "Error uploading image to Cloudinary", http.StatusInternalServerError)
 		return
 	}
 
@@ -87,15 +87,13 @@ func RegisterUser(w http.ResponseWriter, r *http.Request) {
 		thisRequest.Email,
 		thisRequest.FirstName,
 		thisRequest.LastName,
-		uniqueFilename,
+		uploadResult.SecureURL,
 	).Scan(&userID)
 	if err != nil {
 		if dbError, ok := err.(*pq.Error); ok && dbError.Code.Name() == "unique_violation" {
-			os.Remove(filepath)
 			respondWithError(w, "Email already exists", http.StatusConflict)
 			return
 		}
-		os.Remove(filepath)
 		respondWithError(w, "Failed to register user: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
