@@ -46,7 +46,9 @@ RUN apt-get update && apt-get install -y \
     libatlas3-base \
     liblapack3 \
     libjpeg62-turbo \
- && rm -rf /var/lib/apt/lists/*
+    ca-certificates \
+ && rm -rf /var/lib/apt/lists/* \
+ && update-ca-certificates
 
 RUN mkdir -p ./images
 
