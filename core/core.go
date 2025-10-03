@@ -13,8 +13,9 @@ import (
 )
 
 const (
-	ModelDir = "models"
-	ImageDir = "images"
+	ModelDir  = "models"
+	ImageDir  = "images"
+	Threshold = 0.15
 )
 
 var (
@@ -30,11 +31,17 @@ func CompareImages(knownImage, candidateImage string) error {
 	knownImagePath := filepath.Join(".", ImageDir, knownImage)
 	candidateImagePath := filepath.Join(".", ImageDir, candidateImage)
 
-	if _, err := os.Stat(knownImagePath); os.IsNotExist(err) {
+	log.Println("known image path: ", knownImagePath)
+	log.Println("candidate image path: ", candidateImagePath)
+
+	if _, err := os.Stat(candidateImagePath); os.IsNotExist(err) {
+		log.Println("candidate image path not exist")
+
 		return ErrFileNotExist
 	}
 
-	if _, err := os.Stat(candidateImagePath); os.IsNotExist(err) {
+	if _, err := os.Stat(knownImagePath); os.IsNotExist(err) {
+		log.Println("known image path not exist")
 		return ErrFileNotExist
 	}
 
@@ -71,17 +78,21 @@ func CompareImages(knownImage, candidateImage string) error {
 		return fmt.Errorf("error recognizing file: %v", err)
 	}
 
-	// ClassifyThreshold: returns -1 if not close enough
-	threshold := 0.25
-	match := rec.ClassifyThreshold(testFace.Descriptor, float32(threshold))
+	if testFace == nil {
+		return fmt.Errorf("test face is nil")
+	}
 
-	log.Println("time to classify: ", time.Since(currentTime))
+	match := rec.ClassifyThreshold(testFace.Descriptor, float32(Threshold))
+
+	log.Println("time to classify: ", time.Since(currentTime).Seconds())
+	fmt.Println("euclidean distance: ", face.SquaredEuclideanDistance(face1.Descriptor, testFace.Descriptor))
 
 	if match < 0 {
 		fmt.Println("ClassifyThreshold result: Unknown face")
 		return ErrNoMatch
 	}
 	fmt.Println("ClassifyThreshold result: Person index", match)
+	fmt.Println("euclidean distance: ", face.SquaredEuclideanDistance(face1.Descriptor, testFace.Descriptor))
 	return nil
 }
 
