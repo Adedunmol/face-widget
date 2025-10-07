@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"github.com/Adedunmol/face-widget/core"
 	"log"
 	"net/http"
 
@@ -12,6 +13,8 @@ import (
 )
 
 func main() {
+	core.Init()
+
 	err := godotenv.Load()
 	if err != nil {
 		log.Println("Warning: Could not load .env file. Assuming environment variables are set in the environment.")
