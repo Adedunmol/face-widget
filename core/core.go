@@ -75,6 +75,7 @@ func CompareImages(knownImage, candidateImage string) error {
 
 	face1, err := CheckFace(knownImagePath)
 	if err != nil {
+		log.Println(err.Error())
 		return err
 	}
 
@@ -86,6 +87,7 @@ func CompareImages(knownImage, candidateImage string) error {
 	// test with an unknown face
 	testFace, err := CheckFace(candidateImagePath)
 	if err != nil {
+		log.Println(err.Error())
 		return err
 	}
 	match := rec.ClassifyThreshold(testFace.Descriptor, float32(Threshold))
@@ -126,6 +128,7 @@ func ValidateImage(imagePath string) error {
 func CheckFace(imagePath string) (*face.Face, error) {
 	face1, err := rec.RecognizeSingleFile(imagePath)
 	if err != nil {
+		log.Println(err.Error())
 		return nil, fmt.Errorf("error recognizing file: %v", err)
 	}
 
