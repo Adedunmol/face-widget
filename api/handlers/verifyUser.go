@@ -70,14 +70,14 @@ func VerifyUser(w http.ResponseWriter, r *http.Request) {
 	// Get the data from the URL
 	resp, err := http.Get(baseImageURL)
 	if err != nil {
-		log.Fatalf("Failed to download file from URL: %w", err)
+		log.Printf("Failed to download file from URL: %w", err)
 		respondWithError(w, "Error downloading baseImage from Cloudinary", http.StatusInternalServerError)
 		return
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		log.Fatalf("Unexpected status code: %d", resp.StatusCode)
+		log.Printf("Unexpected status code: %d", resp.StatusCode)
 		respondWithError(w, "Error downloading baseImage from Cloudinary", http.StatusInternalServerError)
 		return
 	}
@@ -119,7 +119,7 @@ func VerifyUser(w http.ResponseWriter, r *http.Request) {
 
 	baseFile, err := os.Create(baseFilepath)
 	if err != nil {
-		log.Fatalf("Failed to create temp file: %w", err)
+		log.Printf("Failed to create temp file: %w", err)
 		respondWithError(w, "Error creating file", http.StatusInternalServerError)
 		return
 	}
