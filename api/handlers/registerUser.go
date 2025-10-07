@@ -4,12 +4,16 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/json"
+	"fmt"
 	"io"
 	"log"
 	"net/http"
+	"os"
+	"time"
 
 	"github.com/Adedunmol/face-widget/api/db"
 	"github.com/Adedunmol/face-widget/api/models"
+	"github.com/Adedunmol/face-widget/core"
 
 	"github.com/cloudinary/cloudinary-go/v2"
 	"github.com/cloudinary/cloudinary-go/v2/api/uploader"
@@ -57,18 +61,42 @@ func RegisterUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	baseImageFilename := fmt.Sprintf(
+		"%d_%s%s%s%s",
+		time.Now().Unix(),
+		thisRequest.FirstName,
+		thisRequest.LastName,
+		"BaseImage",
+		".jpg",
+	)
+	baseFilepath := fmt.Sprintf("./images/%s", baseImageFilename)
+
+	if err := os.WriteFile(baseFilepath, decodedData, 0644); err != nil {
+		log.Printf("Failed to save verificationImage file: %v", err)
+		respondWithError(w, "Server Error", http.StatusInternalServerError)
+		return
+	}
+	defer os.Remove(baseFilepath)
+
+	_, err = core.CheckFace(baseFilepath)
+	if err != nil {
+		log.Printf("Failed to recognize file: %v", err)
+		respondWithError(w, "Failed to find a face", http.StatusUnprocessableEntity)
+		return
+	}
+
 	ctx := context.Background()
 
 	cld, err := cloudinary.New()
 	if err != nil {
-		log.Fatalf("Failed to create Cloudinary instance: %v", err)
+		log.Printf("Failed to create Cloudinary instance: %v", err)
 		respondWithError(w, "Error creating Cloudinary instance", http.StatusInternalServerError)
 		return
 	}
 
-	uploadResult, err := cld.Upload.Upload(ctx, "data:image/jpeg;base64,"+thisRequest.EncodedImage, uploader.UploadParams{})
+	uploadResult, err := cld.Upload.Upload(ctx, baseFilepath, uploader.UploadParams{})
 	if err != nil {
-		log.Fatalf("Failed to upload file: %v", err)
+		log.Printf("Failed to upload file: %v", err)
 		respondWithError(w, "Error uploading image to Cloudinary", http.StatusInternalServerError)
 		return
 	}
