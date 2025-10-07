@@ -49,6 +49,7 @@ func VerifyUser(w http.ResponseWriter, r *http.Request) {
 		FROM users
 		WHERE email = $1`
 	var thisUser models.User
+	var baseImageURL string
 	err = db.DB.QueryRow(query, thisRequest.Email).Scan(
 		&thisUser.ID,
 		&thisUser.FirstName,
@@ -98,8 +99,8 @@ func VerifyUser(w http.ResponseWriter, r *http.Request) {
 	baseImageFilename := fmt.Sprintf(
 		"%d_%s%s%s%s",
 		time.Now().Unix(),
-		firstName,
-		lastName,
+		thisUser.FirstName,
+		thisUser.LastName,
 		"BaseImage",
 		".jpg",
 	)
@@ -107,8 +108,8 @@ func VerifyUser(w http.ResponseWriter, r *http.Request) {
 	verificationImageFilename := fmt.Sprintf(
 		"%d_%s%s%s%s",
 		time.Now().Unix(),
-		firstName,
-		lastName,
+		thisUser.FirstName,
+		thisUser.LastName,
 		"VerificationImage",
 		".jpg",
 	)
@@ -148,5 +149,5 @@ func VerifyUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	respondWithJSON(w, http.StatusOK, map[string]string{"message": "User verified successfully!", "data": thisUser})
+	respondWithJSON(w, http.StatusOK, thisUser)
 }
