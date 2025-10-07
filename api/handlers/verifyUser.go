@@ -42,13 +42,19 @@ func VerifyUser(w http.ResponseWriter, r *http.Request) {
 
 	query := `
 		SELECT
+			id,
 			first_name,
 			last_name,
 			facial_image
 		FROM users
 		WHERE email = $1`
-	var firstName, lastName, baseImageURL string
-	err = db.DB.QueryRow(query, thisRequest.Email).Scan(&firstName, &lastName, &baseImageURL)
+	var thisUser models.User
+	err = db.DB.QueryRow(query, thisRequest.Email).Scan(
+		&thisUser.ID,
+		&thisUser.FirstName,
+		&thisUser.LastName,
+		&baseImageURL,
+	)
 	if err == sql.ErrNoRows {
 		respondWithError(w, "User account doesn't exist", http.StatusUnauthorized)
 		return
@@ -57,6 +63,8 @@ func VerifyUser(w http.ResponseWriter, r *http.Request) {
 		respondWithError(w, "Database error: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
+
+	thisUser.Email = thisRequest.Email
 
 	// Get the data from the URL
 	resp, err := http.Get(baseImageURL)
@@ -140,5 +148,5 @@ func VerifyUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	respondWithJSON(w, http.StatusOK, map[string]string{"message": "User verified successfully!"})
+	respondWithJSON(w, http.StatusOK, map[string]string{"message": "User verified successfully!", "data": thisUser})
 }
