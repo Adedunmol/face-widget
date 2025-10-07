@@ -13,7 +13,8 @@ import (
 )
 
 func main() {
-	core.Init()
+	rec := core.Init()
+	defer rec.Close()
 
 	err := godotenv.Load()
 	if err != nil {

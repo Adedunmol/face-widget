@@ -27,7 +27,7 @@ var (
 	rec              *face.Recognizer
 )
 
-func Init() {
+func Init() *face.Recognizer {
 	log.Println("initializing face recognizer")
 	var err error
 	modelsPath := filepath.Join(".", ModelDir)
@@ -37,6 +37,8 @@ func Init() {
 		log.Fatalf("error creating NewRecognizer: %v", err)
 	}
 	log.Println("done initializing face recognizer")
+
+	return rec
 }
 
 func CompareImages(knownImage, candidateImage string) error {
@@ -69,7 +71,7 @@ func CompareImages(knownImage, candidateImage string) error {
 
 	currentTime := time.Now()
 
-	defer rec.Close()
+	//defer rec.Close()
 
 	face1, err := CheckFace(knownImagePath)
 	if err != nil {
