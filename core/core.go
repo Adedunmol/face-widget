@@ -15,7 +15,7 @@ import (
 const (
 	ModelDir  = "models"
 	ImageDir  = "images"
-	Threshold = 0.15
+	Threshold = 0.12
 )
 
 var (
