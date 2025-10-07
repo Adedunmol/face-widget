@@ -23,7 +23,19 @@ var (
 	ErrNoMatch       = errors.New("faces do not match")
 	ErrInvalidFormat = errors.New("invalid image format")
 	ErrDecodingImage = errors.New("error decoding image")
+	ErrNoFaceFound   = errors.New("no face found")
+	rec              *face.Recognizer
 )
+
+func init() {
+	var err error
+	modelsPath := filepath.Join(".", ModelDir)
+	rec, err = face.NewRecognizer(modelsPath)
+
+	if err != nil {
+		log.Fatalf("error creating NewRecognizer: %v", err)
+	}
+}
 
 func CompareImages(knownImage, candidateImage string) error {
 	log.Println("comparing images")
@@ -54,17 +66,12 @@ func CompareImages(knownImage, candidateImage string) error {
 	}
 
 	currentTime := time.Now()
-	modelsPath := filepath.Join(".", ModelDir)
-	rec, err := face.NewRecognizer(modelsPath)
 
-	if err != nil {
-		return fmt.Errorf("error creating NewRecognizer: %v", err)
-	}
 	defer rec.Close()
 
-	face1, err := rec.RecognizeSingleFile(knownImagePath)
+	face1, err := CheckFace(knownImagePath)
 	if err != nil {
-		return fmt.Errorf("error recognizing file: %v", err)
+		return err
 	}
 
 	// Add them to recognizer
@@ -73,15 +80,10 @@ func CompareImages(knownImage, candidateImage string) error {
 	}, []int32{0})
 
 	// test with an unknown face
-	testFace, err := rec.RecognizeSingleFile(candidateImagePath)
+	testFace, err := CheckFace(candidateImagePath)
 	if err != nil {
-		return fmt.Errorf("error recognizing file: %v", err)
+		return err
 	}
-
-	if testFace == nil {
-		return fmt.Errorf("test face is nil")
-	}
-
 	match := rec.ClassifyThreshold(testFace.Descriptor, float32(Threshold))
 
 	log.Println("time to classify: ", time.Since(currentTime).Seconds())
@@ -115,4 +117,17 @@ func ValidateImage(imagePath string) error {
 	}
 
 	return ErrInvalidFormat
+}
+
+func CheckFace(imagePath string) (*face.Face, error) {
+	face1, err := rec.RecognizeSingleFile(imagePath)
+	if err != nil {
+		return nil, fmt.Errorf("error recognizing file: %v", err)
+	}
+
+	if face1 == nil {
+		return nil, ErrNoFaceFound
+	}
+
+	return face1, nil
 }
