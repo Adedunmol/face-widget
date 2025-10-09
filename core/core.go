@@ -25,21 +25,21 @@ var (
 	ErrInvalidFormat = errors.New("invalid image format")
 	ErrDecodingImage = errors.New("error decoding image")
 	ErrNoFaceFound   = errors.New("no face found")
-	rec              *face.Recognizer
+	Rec              *face.Recognizer
 )
 
 func Init() *face.Recognizer {
 	log.Println("initializing face recognizer")
 	var err error
 	modelsPath := filepath.Join(".", ModelDir)
-	rec, err = face.NewRecognizer(modelsPath)
+	Rec, err = face.NewRecognizer(modelsPath)
 
 	if err != nil {
 		log.Fatalf("error creating NewRecognizer: %v", err)
 	}
 	log.Println("done initializing face recognizer")
 
-	return rec
+	return Rec
 }
 
 func CompareImages(knownImage, candidateImage string) error {
@@ -81,7 +81,7 @@ func CompareImages(knownImage, candidateImage string) error {
 	}
 
 	// Add them to recognizer
-	rec.SetSamples([]face.Descriptor{
+	Rec.SetSamples([]face.Descriptor{
 		face1.Descriptor,
 	}, []int32{0})
 
@@ -91,7 +91,7 @@ func CompareImages(knownImage, candidateImage string) error {
 		log.Println(err.Error())
 		return err
 	}
-	match := rec.ClassifyThreshold(testFace.Descriptor, float32(Threshold))
+	match := Rec.ClassifyThreshold(testFace.Descriptor, float32(Threshold))
 
 	log.Println("time to classify: ", time.Since(currentTime).Seconds())
 	fmt.Println("euclidean distance: ", face.SquaredEuclideanDistance(face1.Descriptor, testFace.Descriptor))
@@ -127,7 +127,7 @@ func ValidateImage(imagePath string) error {
 }
 
 func CheckFace(imagePath string) (*face.Face, error) {
-	face1, err := rec.RecognizeSingleFile(imagePath)
+	face1, err := Rec.RecognizeSingleFile(imagePath)
 	if err != nil {
 		log.Println(err.Error())
 		return nil, fmt.Errorf("error recognizing file: %v", err)
