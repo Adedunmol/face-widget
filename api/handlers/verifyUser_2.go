@@ -111,6 +111,10 @@ func NewVerifyUser(w http.ResponseWriter, r *http.Request) {
 	// 1. Check for same identity
 	samePerson := core.IsSamePerson(core.Rec, frames)
 	log.Println("same person: ", samePerson)
+	if !samePerson {
+		respondWithError(w, "Invalid credentials", http.StatusUnauthorized)
+		return
+	}
 
 	// 2. Check for movement
 	rectMotion := core.ComputeRectangleMotion(frames)
@@ -118,7 +122,7 @@ func NewVerifyUser(w http.ResponseWriter, r *http.Request) {
 	log.Printf("rectMotion: %v, descriptorShift: %v\n", rectMotion, descriptorShift)
 
 	// Thresholds (tune by experimentation)
-	live := samePerson && descriptorShift > 0.1
+	live := rectMotion < 10 && descriptorShift > 0.085 && descriptorShift < 0.12
 	if !live {
 		respondWithError(w, "Invalid credentials", http.StatusUnauthorized)
 		return
