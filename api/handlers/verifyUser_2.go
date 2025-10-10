@@ -84,12 +84,10 @@ func NewVerifyUser(w http.ResponseWriter, r *http.Request) {
 		}
 
 		detected, err := core.Rec.RecognizeSingle(decodedData)
-		if detected == nil && i == 0 {
-			log.Println("No face found on frame 1")
+		if detected == nil {
+			log.Println("No face found on frame", i)
 			respondWithError(w, "Failed to find a face", http.StatusUnprocessableEntity)
 			return
-		} else if err != nil || detected == nil {
-			continue
 		}
 
 		if i == 0 {
@@ -102,8 +100,8 @@ func NewVerifyUser(w http.ResponseWriter, r *http.Request) {
 		})
 	}
 
-	if len(frames) < 4 {
-		log.Println("Valid frames < 2")
+	if len(frames) < 5 {
+		log.Println("Valid frames < 5")
 		respondWithError(w, "Failed to verify face", http.StatusUnprocessableEntity)
 		return
 	}
@@ -122,7 +120,7 @@ func NewVerifyUser(w http.ResponseWriter, r *http.Request) {
 	log.Printf("rectMotion: %v, descriptorShift: %v\n", rectMotion, descriptorShift)
 
 	// Thresholds (tune by experimentation)
-	live := rectMotion < 10 && descriptorShift > 0.085 && descriptorShift < 0.12
+	live := rectMotion < 10 && descriptorShift > 0.07
 	if !live {
 		respondWithError(w, "Invalid credentials", http.StatusUnauthorized)
 		return
