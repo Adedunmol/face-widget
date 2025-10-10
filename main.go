@@ -2,9 +2,10 @@ package main
 
 import (
 	"fmt"
-	"github.com/Adedunmol/face-widget/core"
 	"log"
 	"net/http"
+
+	"github.com/Adedunmol/face-widget/core"
 
 	"github.com/Adedunmol/face-widget/api/db"
 	"github.com/Adedunmol/face-widget/api/handlers"
@@ -29,6 +30,7 @@ func main() {
 
 	mux.HandleFunc("POST /register", handlers.RegisterUser)
 	mux.HandleFunc("POST /verify", handlers.VerifyUser)
+	mux.HandleFunc("POST /verify_user", handlers.NewVerifyUser)
 
 	c := cors.New(cors.Options{
 		AllowedOrigins:   []string{"*"},

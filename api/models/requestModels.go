@@ -11,3 +11,8 @@ type VerifyUserPayload struct {
 	Email        string `json:"email"`
 	EncodedImage string `json:"facial_image"`
 }
+
+type NewVerifyUserPayload struct {
+	Email  string   `json:"email"`
+	Frames []string `json:"frames"`
+}
