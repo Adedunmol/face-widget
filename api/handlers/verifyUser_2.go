@@ -102,7 +102,7 @@ func NewVerifyUser(w http.ResponseWriter, r *http.Request) {
 		})
 	}
 
-	if len(frames) < 2 {
+	if len(frames) < 4 {
 		log.Println("Valid frames < 2")
 		respondWithError(w, "Failed to verify face", http.StatusUnprocessableEntity)
 		return
