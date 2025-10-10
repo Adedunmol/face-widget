@@ -118,7 +118,7 @@ func NewVerifyUser(w http.ResponseWriter, r *http.Request) {
 	log.Printf("rectMotion: %v, descriptorShift: %v\n", rectMotion, descriptorShift)
 
 	// Thresholds (tune by experimentation)
-	live := samePerson && (rectMotion > 2.0 || descriptorShift > 0.01)
+	live := samePerson && descriptorShift > 0.1
 	if !live {
 		respondWithError(w, "Invalid credentials", http.StatusUnauthorized)
 		return
